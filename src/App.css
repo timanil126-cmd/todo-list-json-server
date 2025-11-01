@@ -160,13 +160,21 @@ h1 {
 
 .todo-content {
   flex: 1;
-  margin-right: 16px;
+}
+
+.todo-content.clickable {
+  cursor: pointer;
+}
+
+.todo-content.clickable:hover .todo-text {
+  color: #667eea;
 }
 
 .todo-text {
   font-size: 16px;
   color: #333;
   line-height: 1.4;
+  transition: color 0.3s ease;
 }
 
 .todo-item.completed .todo-text {
@@ -174,25 +182,119 @@ h1 {
   color: #666;
 }
 
-.edit-input {
-  width: 100%;
-  padding: 8px 12px;
-  border: 2px solid #667eea;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-.edit-input:focus {
-  outline: none;
-}
-
-.todo-actions {
+.task-header {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  padding: 24px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  gap: 16px;
 }
 
-.edit-button, .delete-button, .save-button, .cancel-button {
-  padding: 8px 16px;
+.back-button {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.task-header h1 {
+  background: none;
+  padding: 0;
+  text-align: left;
+}
+
+.task-details {
+  padding: 24px;
+}
+
+.task-status {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.status-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.status-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.status-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.task-content {
+  margin-bottom: 24px;
+}
+
+.task-content h2 {
+  margin-bottom: 16px;
+  color: #333;
+  font-size: 20px;
+}
+
+.task-text p {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.edit-section {
+  margin-bottom: 16px;
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: #764ba2;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.task-actions {
+  border-top: 1px solid #e9ecef;
+  padding-top: 24px;
+}
+
+.edit-button, .delete-button, .save-button, .cancel-button, .home-button {
+  padding: 12px 24px;
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -236,6 +338,54 @@ h1 {
   background: #545b62;
 }
 
+.home-button {
+  background: #667eea;
+  color: white;
+}
+
+.home-button:hover {
+  background: #5a6fd8;
+}
+
+.loading, .error {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 18px;
+  color: #666;
+}
+
+.error {
+  color: #e74c3c;
+}
+
+.not-found {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.not-found-content h1 {
+  font-size: 72px;
+  color: #667eea;
+  margin-bottom: 16px;
+  background: none;
+}
+
+.not-found-content h2 {
+  font-size: 24px;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.not-found-content p {
+  color: #666;
+  margin-bottom: 24px;
+}
+
 @media (max-width: 768px) {
   .app {
     padding: 10px;
@@ -262,17 +412,17 @@ h1 {
     flex-direction: column;
   }
   
-  .todo-item {
+  .task-header {
     flex-direction: column;
-    align-items: stretch;
     gap: 12px;
+    text-align: center;
   }
   
-  .todo-content {
-    margin-right: 0;
+  .task-header h1 {
+    text-align: center;
   }
   
-  .todo-actions {
-    justify-content: flex-end;
+  .edit-actions {
+    flex-direction: column;
   }
 }

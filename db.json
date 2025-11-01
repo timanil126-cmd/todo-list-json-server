@@ -2,7 +2,7 @@
   "todos": [
     {
       "title": "dadz",
-      "completed": false,
+      "completed": true,
       "id": 2
     },
     {
