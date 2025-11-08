@@ -1,76 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTodo } from '../context/TodoContext';
 
 function TaskPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { todos, updateTodo, deleteTodo, toggleComplete, error } = useTodo();
+  
   const [todo, setTodo] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState('');
-
-  const API_URL = 'http://localhost:3001/todos';
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchTodo();
-  }, [id]);
-
-  const fetchTodo = async () => {
-    try {
-      const response = await fetch(`${API_URL}/${id}`);
-      if (!response.ok) {
-        navigate('/404');
-        return;
-      }
-      const data = await response.json();
-      setTodo(data);
-      setEditText(data.title);
-      setLoading(false);
-    } catch (error) {
-      console.error('Ошибка загрузки:', error);
+    const foundTodo = todos.find(t => t.id === parseInt(id));
+    if (foundTodo) {
+      setTodo(foundTodo);
+      setEditText(foundTodo.title);
+    } else {
       navigate('/404');
     }
-  };
-
-  const updateTodo = async (updates) => {
-    try {
-      const response = await fetch(`${API_URL}/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-      
-      const updatedTodo = await response.json();
-      setTodo(updatedTodo);
-      return true;
-    } catch (error) {
-      console.error('Ошибка обновления:', error);
-      return false;
-    }
-  };
-
-  const deleteTodo = async () => {
-    if (window.confirm('Вы уверены, что хотите удалить эту задачу?')) {
-      try {
-        await fetch(`${API_URL}/${id}`, {
-          method: 'DELETE',
-        });
-        navigate('/');
-      } catch (error) {
-        console.error('Ошибка удаления:', error);
-      }
-    }
-  };
+  }, [id, todos, navigate]);
 
   const handleSaveEdit = async () => {
     if (!editText.trim()) return;
     
-    const success = await updateTodo({ title: editText.trim() });
+    setLoading(true);
+    const success = await updateTodo(todo.id, { title: editText.trim() });
     if (success) {
       setEditing(false);
     }
+    setLoading(false);
   };
 
   const handleCancelEdit = () => {
@@ -78,26 +38,31 @@ function TaskPage() {
     setEditing(false);
   };
 
-  const toggleComplete = async () => {
-    await updateTodo({ completed: !todo.completed });
+  const handleToggleComplete = async () => {
+    setLoading(true);
+    await toggleComplete(todo);
+    setLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm('Вы уверены, что хотите удалить эту задачу?')) {
+      setLoading(true);
+      const success = await deleteTodo(todo.id);
+      if (success) {
+        navigate('/');
+      }
+      setLoading(false);
+    }
   };
 
   const handleBack = () => {
     navigate(-1);
   };
 
-  if (loading) {
-    return (
-      <div className="container">
-        <div className="loading">Загрузка...</div>
-      </div>
-    );
-  }
-
   if (!todo) {
     return (
       <div className="container">
-        <div className="error">Задача не найдена</div>
+        <div className="loading">Загрузка задачи...</div>
       </div>
     );
   }
@@ -111,14 +76,21 @@ function TaskPage() {
         <h1>Задача #{id}</h1>
       </div>
 
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
+
       <div className="task-details">
         <div className="task-status">
           <label className="status-label">
             <input
               type="checkbox"
               checked={todo.completed}
-              onChange={toggleComplete}
+              onChange={handleToggleComplete}
               className="status-checkbox"
+              disabled={loading}
             />
             <span className="status-text">
               {todo.completed ? 'Выполнена' : 'Не выполнена'}
@@ -135,12 +107,21 @@ function TaskPage() {
                 onChange={(e) => setEditText(e.target.value)}
                 className="edit-textarea"
                 rows="4"
+                disabled={loading}
               />
               <div className="edit-actions">
-                <button onClick={handleSaveEdit} className="save-button">
-                  Сохранить
+                <button 
+                  onClick={handleSaveEdit} 
+                  className="save-button"
+                  disabled={loading}
+                >
+                  {loading ? 'Сохранение...' : 'Сохранить'}
                 </button>
-                <button onClick={handleCancelEdit} className="cancel-button">
+                <button 
+                  onClick={handleCancelEdit}
+                  className="cancel-button"
+                  disabled={loading}
+                >
                   Отмена
                 </button>
               </div>
@@ -151,6 +132,7 @@ function TaskPage() {
               <button 
                 onClick={() => setEditing(true)}
                 className="edit-button"
+                disabled={loading}
               >
                 Редактировать
               </button>
@@ -159,8 +141,12 @@ function TaskPage() {
         </div>
 
         <div className="task-actions">
-          <button onClick={deleteTodo} className="delete-button">
-            Удалить задачу
+          <button 
+            onClick={handleDelete} 
+            className="delete-button"
+            disabled={loading}
+          >
+            {loading ? 'Удаление...' : 'Удалить задачу'}
           </button>
         </div>
       </div>

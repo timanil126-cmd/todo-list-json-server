@@ -1,67 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTodo } from '../context/TodoContext';
 
 function MainPage() {
-  const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [sortAlphabetical, setSortAlphabetical] = useState(false);
+  
+  const { todos, loading, error, addTodo, toggleComplete } = useTodo();
   const navigate = useNavigate();
 
-  const API_URL = 'http://localhost:3001/todos';
-
-  useEffect(() => {
-    fetchTodos();
-  }, []);
-
-  const fetchTodos = async () => {
-    try {
-      const response = await fetch(API_URL);
-      const data = await response.json();
-      setTodos(data);
-    } catch (error) {
-      console.error('Ошибка загрузки:', error);
-    }
-  };
-
-  const addTodo = async (e) => {
+  const handleAddTodo = async (e) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
 
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          title: newTodo.trim(),
-          completed: false,
-        }),
-      });
-      
-      const todo = await response.json();
-      setTodos([...todos, todo]);
+    const todo = await addTodo(newTodo);
+    if (todo) {
       setNewTodo('');
-    } catch (error) {
-      console.error('Ошибка добавления:', error);
-    }
-  };
-
-  const toggleComplete = async (todo) => {
-    try {
-      const response = await fetch(`${API_URL}/${todo.id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ completed: !todo.completed }),
-      });
-      
-      const updatedTodo = await response.json();
-      setTodos(todos.map(t => t.id === todo.id ? updatedTodo : t));
-    } catch (error) {
-      console.error('Ошибка обновления:', error);
     }
   };
 
@@ -85,21 +40,43 @@ function MainPage() {
       return 0;
     });
 
+  if (loading) {
+    return (
+      <div className="container">
+        <div className="loading">Загрузка задач...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="container">
       <h1>Управление задачами</h1>
       
+      {error && (
+        <div className="error-message">
+          {error}
+          <button onClick={() => window.location.reload()} className="retry-button">
+            Повторить
+          </button>
+        </div>
+      )}
+      
       <div className="controls">
-        <form onSubmit={addTodo} className="add-form">
+        <form onSubmit={handleAddTodo} className="add-form">
           <input
             type="text"
             value={newTodo}
             onChange={(e) => setNewTodo(e.target.value)}
             placeholder="Введите новую задачу..."
             className="todo-input"
+            disabled={loading}
           />
-          <button type="submit" className="add-button">
-            Добавить
+          <button 
+            type="submit" 
+            className="add-button"
+            disabled={loading}
+          >
+            {loading ? 'Добавление...' : 'Добавить'}
           </button>
         </form>
 
@@ -134,6 +111,7 @@ function MainPage() {
                   type="checkbox"
                   checked={todo.completed}
                   onChange={() => toggleComplete(todo)}
+                  disabled={loading}
                 />
               </div>
               
