@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { TodoProvider } from './context/TodoContext';
+import { Provider } from 'react-redux';
+import store from './redux/store';
 import MainPage from './components/MainPage';
 import TaskPage from './components/TaskPage';
 import NotFoundPage from './components/NotFoundPage';
@@ -8,7 +9,7 @@ import './App.css';
 
 function App() {
   return (
-    <TodoProvider>
+    <Provider store={store}>
       <Router>
         <div className="app">
           <Routes>
@@ -19,7 +20,7 @@ function App() {
           </Routes>
         </div>
       </Router>
-    </TodoProvider>
+    </Provider>
   );
 }
 

@@ -1,0 +1,10 @@
+export const TODOS_LOADING = 'TODOS_LOADING';
+export const TODOS_LOADED = 'TODOS_LOADED';
+export const TODOS_ERROR = 'TODOS_ERROR';
+export const TODO_ADDED = 'TODO_ADDED';
+export const TODO_UPDATED = 'TODO_UPDATED';
+export const TODO_DELETED = 'TODO_DELETED';
+export const SET_SEARCH_TERM = 'SET_SEARCH_TERM';
+export const TOGGLE_SORT = 'TOGGLE_SORT';
+export const SET_EDITING_TODO = 'SET_EDITING_TODO';
+export const UPDATE_EDITING_TEXT = 'UPDATE_EDITING_TEXT';

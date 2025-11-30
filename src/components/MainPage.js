@@ -1,27 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTodo } from '../context/TodoContext';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  loadTodos,
+  addTodo,
+  toggleComplete,
+  setSearchTerm,
+  toggleSort
+} from '../redux/actions';
 
 function MainPage() {
   const [newTodo, setNewTodo] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [sortAlphabetical, setSortAlphabetical] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
   
-  const { todos, loading, error, addTodo, toggleComplete } = useTodo();
+  const { items: todos, loading: todosLoading, error } = useSelector(state => state.todos);
+  const { searchTerm, sortAlphabetical } = useSelector(state => state.filters);
+  
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    dispatch(loadTodos());
+  }, [dispatch]);
 
   const handleAddTodo = async (e) => {
     e.preventDefault();
     if (!newTodo.trim()) return;
 
-    const todo = await addTodo(newTodo);
-    if (todo) {
+    setAddLoading(true);
+    try {
+      await dispatch(addTodo(newTodo));
       setNewTodo('');
+    } catch (error) {
+      // Ошибка уже обработана в action
+    } finally {
+      setAddLoading(false);
     }
   };
 
   const handleTaskClick = (id) => {
+    console.log('Navigating to task with id:', id);
     navigate(`/task/${id}`);
+  };
+
+  const handleSearchChange = (term) => {
+    dispatch(setSearchTerm(term));
+  };
+
+  const handleToggleSort = () => {
+    dispatch(toggleSort());
+  };
+
+  const handleRetry = () => {
+    dispatch(loadTodos());
   };
 
   const truncateText = (text, maxLength = 50) => {
@@ -40,7 +71,7 @@ function MainPage() {
       return 0;
     });
 
-  if (loading) {
+  if (todosLoading && todos.length === 0) {
     return (
       <div className="container">
         <div className="loading">Загрузка задач...</div>
@@ -54,8 +85,8 @@ function MainPage() {
       
       {error && (
         <div className="error-message">
-          {error}
-          <button onClick={() => window.location.reload()} className="retry-button">
+          <div>{error}</div>
+          <button onClick={handleRetry} className="retry-button">
             Повторить
           </button>
         </div>
@@ -69,14 +100,14 @@ function MainPage() {
             onChange={(e) => setNewTodo(e.target.value)}
             placeholder="Введите новую задачу..."
             className="todo-input"
-            disabled={loading}
+            disabled={addLoading || todosLoading}
           />
           <button 
             type="submit" 
             className="add-button"
-            disabled={loading}
+            disabled={addLoading || todosLoading}
           >
-            {loading ? 'Добавление...' : 'Добавить'}
+            {addLoading ? 'Добавление...' : 'Добавить'}
           </button>
         </form>
 
@@ -84,13 +115,13 @@ function MainPage() {
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             placeholder="Поиск задач..."
             className="search-input"
           />
           
           <button
-            onClick={() => setSortAlphabetical(!sortAlphabetical)}
+            onClick={handleToggleSort}
             className={`sort-button ${sortAlphabetical ? 'active' : ''}`}
           >
             {sortAlphabetical ? 'Сортировка: Вкл' : 'Сортировка: Выкл'}
@@ -110,8 +141,8 @@ function MainPage() {
                 <input
                   type="checkbox"
                   checked={todo.completed}
-                  onChange={() => toggleComplete(todo)}
-                  disabled={loading}
+                  onChange={() => dispatch(toggleComplete(todo))}
+                  disabled={todosLoading}
                 />
               </div>
               

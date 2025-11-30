@@ -1,63 +1,108 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useTodo } from '../context/TodoContext';
+import { useSelector, useDispatch } from 'react-redux';
+import {
+  loadTodos,
+  updateTodo,
+  deleteTodo,
+  toggleComplete,
+  setEditingTodo,
+  updateEditingText
+} from '../redux/actions';
 
 function TaskPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { todos, updateTodo, deleteTodo, toggleComplete, error } = useTodo();
   
+  const { items: todos, loading: todosLoading, error } = useSelector(state => state.todos);
+  const { editingTodo, editingText } = useSelector(state => state.editing);
+  
+  const dispatch = useDispatch();
   const [todo, setTodo] = useState(null);
-  const [editing, setEditing] = useState(false);
-  const [editText, setEditText] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const foundTodo = todos.find(t => t.id === parseInt(id));
-    if (foundTodo) {
-      setTodo(foundTodo);
-      setEditText(foundTodo.title);
-    } else {
-      navigate('/404');
+    if (todos.length === 0) {
+      dispatch(loadTodos());
     }
-  }, [id, todos, navigate]);
+  }, [dispatch, todos.length]);
+
+  useEffect(() => {
+    if (todos.length > 0) {
+      const taskId = parseInt(id);
+      const foundTodo = todos.find(t => t.id === taskId);
+      
+      if (foundTodo) {
+        setTodo(foundTodo);
+        setNotFound(false);
+        if (!editingTodo || editingTodo.id !== foundTodo.id) {
+          dispatch(setEditingTodo(foundTodo));
+        }
+      } else {
+        setNotFound(true);
+      }
+    }
+  }, [id, todos, dispatch, editingTodo]);
 
   const handleSaveEdit = async () => {
-    if (!editText.trim()) return;
+    if (!editingText.trim() || !todo) return;
     
-    setLoading(true);
-    const success = await updateTodo(todo.id, { title: editText.trim() });
-    if (success) {
-      setEditing(false);
-    }
-    setLoading(false);
+    setActionLoading(true);
+    await dispatch(updateTodo(todo.id, { title: editingText.trim() }));
+    setActionLoading(false);
+    dispatch(setEditingTodo(null));
   };
 
   const handleCancelEdit = () => {
-    setEditText(todo.title);
-    setEditing(false);
+    if (todo) {
+      dispatch(updateEditingText(todo.title));
+    }
   };
 
   const handleToggleComplete = async () => {
-    setLoading(true);
-    await toggleComplete(todo);
-    setLoading(false);
+    if (!todo) return;
+    
+    setActionLoading(true);
+    await dispatch(toggleComplete(todo));
+    setActionLoading(false);
   };
 
   const handleDelete = async () => {
+    if (!todo) return;
+    
     if (window.confirm('Вы уверены, что хотите удалить эту задачу?')) {
-      setLoading(true);
-      const success = await deleteTodo(todo.id);
-      if (success) {
-        navigate('/');
-      }
-      setLoading(false);
+      setActionLoading(true);
+      await dispatch(deleteTodo(todo.id));
+      setActionLoading(false);
+      navigate('/');
     }
   };
 
   const handleBack = () => {
     navigate(-1);
   };
+
+  const handleGoHome = () => {
+    navigate('/');
+  };
+
+  if (notFound) {
+    return (
+      <div className="container">
+        <div className="not-found">
+          <div className="not-found-content">
+            <h1>404</h1>
+            <h2>Задача не найдена</h2>
+            <p>Задача с ID {id} не существует.</p>
+            <button onClick={handleGoHome} className="home-button">
+              Вернуться на главную
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!todo) {
     return (
@@ -66,6 +111,8 @@ function TaskPage() {
       </div>
     );
   }
+
+  const isEditing = editingTodo && editingTodo.id === todo.id;
 
   return (
     <div className="container">
@@ -90,7 +137,7 @@ function TaskPage() {
               checked={todo.completed}
               onChange={handleToggleComplete}
               className="status-checkbox"
-              disabled={loading}
+              disabled={actionLoading || todosLoading}
             />
             <span className="status-text">
               {todo.completed ? 'Выполнена' : 'Не выполнена'}
@@ -100,27 +147,27 @@ function TaskPage() {
 
         <div className="task-content">
           <h2>Описание задачи:</h2>
-          {editing ? (
+          {isEditing ? (
             <div className="edit-section">
               <textarea
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
+                value={editingText}
+                onChange={(e) => dispatch(updateEditingText(e.target.value))}
                 className="edit-textarea"
                 rows="4"
-                disabled={loading}
+                disabled={actionLoading || todosLoading}
               />
               <div className="edit-actions">
                 <button 
                   onClick={handleSaveEdit} 
                   className="save-button"
-                  disabled={loading}
+                  disabled={actionLoading || todosLoading}
                 >
-                  {loading ? 'Сохранение...' : 'Сохранить'}
+                  {actionLoading ? 'Сохранение...' : 'Сохранить'}
                 </button>
                 <button 
                   onClick={handleCancelEdit}
                   className="cancel-button"
-                  disabled={loading}
+                  disabled={actionLoading || todosLoading}
                 >
                   Отмена
                 </button>
@@ -130,9 +177,9 @@ function TaskPage() {
             <div className="task-text">
               <p>{todo.title}</p>
               <button 
-                onClick={() => setEditing(true)}
+                onClick={() => dispatch(setEditingTodo(todo))}
                 className="edit-button"
-                disabled={loading}
+                disabled={actionLoading || todosLoading}
               >
                 Редактировать
               </button>
@@ -144,9 +191,9 @@ function TaskPage() {
           <button 
             onClick={handleDelete} 
             className="delete-button"
-            disabled={loading}
+            disabled={actionLoading || todosLoading}
           >
-            {loading ? 'Удаление...' : 'Удалить задачу'}
+            {actionLoading ? 'Удаление...' : 'Удалить задачу'}
           </button>
         </div>
       </div>
